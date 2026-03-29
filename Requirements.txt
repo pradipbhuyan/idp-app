@@ -1,0 +1,15 @@
+streamlit
+pandas
+python-dotenv
+langchain
+langchain-openai
+langchain-community
+langchain-text-splitters
+openai
+chromadb
+pypdf
+python-docx
+unstructured
+openpyxl
+streamlit-pdf-viewer
+truststore
