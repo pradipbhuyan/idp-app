@@ -12,8 +12,8 @@ from io import BytesIO
 
 import streamlit as st
 import pandas as pd
-import truststore
-truststore.inject_into_ssl()
+#import truststore
+#truststore.inject_into_ssl()
 
 #from dotenv import load_dotenv
 #load_dotenv()
