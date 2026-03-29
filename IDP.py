@@ -381,11 +381,12 @@ def create_vectorstore(docs):
     chunks = []
 
     for doc in docs:
-    split_texts = simple_text_splitter(doc.page_content)
-        for chunk in split_texts:
-        chunks.append(Document(page_content=chunk))
+        split_texts = simple_text_splitter(doc.page_content)
+            for chunk in split_texts:
+                chunks.append(Document(page_content=chunk))
             
     db_path = f"./chroma_db_{uuid.uuid4().hex}"
+    
     return Chroma.from_documents(chunks, embedding=embeddings)
 
 import time
