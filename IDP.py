@@ -28,14 +28,8 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 #from chromadb import Client
 #from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
-from langchain_community.document_loaders import (
-    TextLoader,
-    PyPDFLoader,
-    UnstructuredPowerPointLoader,
-    UnstructuredExcelLoader,
-)
 
-from langchain_core.documents import Document
+#from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage
 from docx import Document as DocxDocument
 from streamlit_pdf_viewer import pdf_viewer
@@ -137,43 +131,43 @@ def load_docx_safe(file_path):
     text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
     return [Document(page_content=text)]
 
-
 def process_file(uploaded_file):
     documents = []
+
     if not uploaded_file:
         return documents
 
     suffix = Path(uploaded_file.name).suffix.lower()
 
-    if suffix in [".png", ".jpg", ".jpeg"]:
-        encoded = base64.b64encode(uploaded_file.getvalue()).decode()
+    file_bytes = uploaded_file.getvalue()
 
-        message = HumanMessage(content=[
-            {"type": "text", "text": "Extract all readable text with structure (headings, tables, key-value pairs)."},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
-        ])
+    # TXT
+    if suffix == ".txt":
+        try:
+            text = file_bytes.decode("utf-8")
+        except:
+            text = file_bytes.decode("cp1252", errors="ignore")
+        documents.append(text)
 
-        response = llm.invoke([message])
-        documents.append(Document(page_content=response.content))
+    # PDF
+    elif suffix == ".pdf":
+        from pypdf import PdfReader
+        reader = PdfReader(BytesIO(file_bytes))
+        text = "\n".join([page.extract_text() or "" for page in reader.pages])
+        documents.append(text)
 
+    # DOCX
+    elif suffix == ".docx":
+        doc = DocxDocument(BytesIO(file_bytes))
+        text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+        documents.append(text)
+
+    # Fallback
     else:
-        file_path = save_temp_file(uploaded_file)
-
-        if suffix == ".txt":
-            try:
-                documents.extend(TextLoader(file_path, encoding="utf-8").load())
-            except Exception:
-                documents.extend(TextLoader(file_path, encoding="cp1252").load())
-        elif suffix == ".pdf":
-            documents.extend(PyPDFLoader(file_path).load())
-        elif suffix == ".docx":
-            documents.extend(load_docx_safe(file_path))
-        elif suffix == ".pptx":
-            documents.extend(UnstructuredPowerPointLoader(file_path).load())
-        elif suffix == ".xlsx":
-            documents.extend(UnstructuredExcelLoader(file_path).load())
+        documents.append("Unsupported file type")
 
     return documents
+
 
 
 def safe_json_parse(response):
@@ -475,7 +469,7 @@ if uploaded_file:
         st.session_state.full_text = "\n".join([d.page_content for d in docs])
         progress.progress(40, text="Text extracted")
 
-        st.session_state.doc_type = detect_document_type(st.session_state.full_text)
+        st.session_state.full_text = "\n".join(docs)
         progress.progress(60, text="Document type detected")
 
         st.session_state.structured_data = extract_structured_json(
