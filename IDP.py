@@ -32,7 +32,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 #from langchain_core.documents import Document
 
 #from docx import Document as DocxDocument
-from streamlit_pdf_viewer import pdf_viewer
+#from streamlit_pdf_viewer import pdf_viewer
 
 # ------------------------------
 # INIT
@@ -553,7 +553,18 @@ selected_tab = st.radio(
 if selected_tab == "Preview":
     if uploaded_file:
         if "pdf" in uploaded_file.type:
-            pdf_viewer(uploaded_file.getvalue(), height=200)
+        import base64
+        
+        pdf_bytes = uploaded_file.getvalue()
+        base64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+        
+        pdf_display = f"""
+        <iframe src="data:application/pdf;base64,{base64_pdf}"
+        width="100%" height="500" type="application/pdf"></iframe>
+        """
+        
+        st.markdown(pdf_display, unsafe_allow_html=True)
+        
         elif "image" in uploaded_file.type:
             st.image(uploaded_file, width=300)
         elif "text" in uploaded_file.type:
