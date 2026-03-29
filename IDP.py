@@ -30,7 +30,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 
 #from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage
+
 from docx import Document as DocxDocument
 from streamlit_pdf_viewer import pdf_viewer
 
