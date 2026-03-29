@@ -591,7 +591,7 @@ if selected_tab == "Chat":
                 if cols[i].button(q):
                     st.session_state.chat_history.append({"role": "user", "content": q})
 
-                   context = st.session_state.full_text[:3000]
+                    context = st.session_state.full_text[:3000]
 
                     response = tracked_llm_call(
                         f"Answer strictly from context.\nContext:\n{context}\nQ:{q}"
