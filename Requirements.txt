@@ -1,15 +1,10 @@
 streamlit
 pandas
-python-dotenv
+openai
 langchain==0.1.20
 langchain-openai==0.0.8
 langchain-community==0.0.38
-openai
-chromadb
 pypdf
 python-docx
-unstructured
 openpyxl
-streamlit-pdf-viewer
-truststore
 
