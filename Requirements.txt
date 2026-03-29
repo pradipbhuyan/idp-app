@@ -13,3 +13,7 @@ unstructured
 openpyxl
 streamlit-pdf-viewer
 truststore
+langchain==0.2.16
+langchain-openai==0.1.23
+langchain-community==0.2.16
+langchain-text-splitters==0.2.2
