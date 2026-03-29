@@ -26,7 +26,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 #from langchain.text_splitter import RecursiveCharacterTextSplitter
 #from langchain_community.vectorstores import Chroma
 #from chromadb import Client
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+#from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from langchain_community.document_loaders import (
     TextLoader,
@@ -60,8 +60,11 @@ with col2:
     st.caption("AI-powered document understanding & automation")
 
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-embeddings = OpenAIEmbeddings()
+#llm = ChatOpenAI(model="gpt-4o", temperature=0)
+from openai import OpenAI
+client = OpenAI()
+
+#embeddings = OpenAIEmbeddings()
 
 # Session state
 for key in ["structured_data", "doc_type", "vectorstore", "full_text"]:
@@ -381,27 +384,29 @@ import uuid
 import time
 
 def tracked_llm_call(prompt):
+    import time
     start = time.time()
 
-    response = llm.invoke(prompt)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": str(prompt)}]
+    )
+
+    content = response.choices[0].message.content
 
     duration = time.time() - start
-    tokens = len(str(prompt)) // 4 + len(str(response.content)) // 4
 
-    # Global metrics
+    tokens = len(str(prompt)) // 4 + len(str(content)) // 4
+
     st.session_state.metrics["tokens"] += tokens
     st.session_state.metrics["response_times"].append(duration)
 
-    # ✅ Per-document metrics
-    current_file = st.session_state.get("current_file")
+    # Return object with .content to match your code
+    class Resp:
+        def __init__(self, content):
+            self.content = content
 
-    if current_file and current_file in st.session_state.doc_metrics:
-        doc_metric = st.session_state.doc_metrics[current_file]
-        doc_metric["tokens"] += tokens
-        doc_metric["response_times"].append(duration)
-        doc_metric["calls"] += 1
-
-    return response
+    return Resp(content)
 
 # ------------------------------
 # NEW: Recommendation Generator
