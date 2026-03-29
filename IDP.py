@@ -31,7 +31,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 #from langchain_core.documents import Document
 
-from docx import Document as DocxDocument
+#from docx import Document as DocxDocument
 from streamlit_pdf_viewer import pdf_viewer
 
 # ------------------------------
@@ -157,7 +157,7 @@ def process_file(uploaded_file):
         documents.append(text)
 
     # DOCX
-    elif suffix == ".docx":
+    #elif suffix == ".docx":
         doc = DocxDocument(BytesIO(file_bytes))
         text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
         documents.append(text)
