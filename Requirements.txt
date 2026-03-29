@@ -4,5 +4,4 @@ openai
 pypdf
 python-docx==1.1.0
 openpyxl
-streamlit-pdf-viewer
 
