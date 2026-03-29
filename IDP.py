@@ -24,7 +24,8 @@ import streamlit as st
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 #from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+#from langchain_community.vectorstores import Chroma
+from chromadb import Client
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from langchain_community.document_loaders import (
