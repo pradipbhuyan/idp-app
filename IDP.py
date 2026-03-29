@@ -25,7 +25,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 #from langchain.text_splitter import RecursiveCharacterTextSplitter
 #from langchain_community.vectorstores import Chroma
-from chromadb import Client
+#from chromadb import Client
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from langchain_community.document_loaders import (
@@ -378,19 +378,6 @@ def build_resume(data, template_file):
 
 import uuid
 
-def create_vectorstore(docs):
-    chunks = []
-
-    for doc in docs:
-        split_texts = simple_text_splitter(doc.page_content)
-        
-        for chunk in split_texts:
-            chunks.append(Document(page_content=chunk))
-            
-    db_path = f"./chroma_db_{uuid.uuid4().hex}"
-    
-    return Chroma.from_documents(chunks, embedding=embeddings)
-
 import time
 
 def tracked_llm_call(prompt):
@@ -498,7 +485,7 @@ if uploaded_file:
             st.session_state.full_text
         )
 
-        st.session_state.vectorstore = create_vectorstore(docs)
+        #st.session_state.vectorstore = create_vectorstore(docs)
         progress.progress(100, text="Vector index created")
 
         # 🎯 Auto-suggested questions
@@ -604,8 +591,7 @@ if selected_tab == "Chat":
                 if cols[i].button(q):
                     st.session_state.chat_history.append({"role": "user", "content": q})
 
-                    docs = st.session_state.vectorstore.similarity_search(q, k=3)
-                    context = "\n\n".join([d.page_content for d in docs])
+                   context = st.session_state.full_text[:3000]
 
                     response = tracked_llm_call(
                         f"Answer strictly from context.\nContext:\n{context}\nQ:{q}"
