@@ -55,7 +55,8 @@ with col2:
 
 
 #llm = ChatOpenAI(model="gpt-4o", temperature=0)
-from openai import OpenAI
+#from openai import OpenAI
+import openai
 client = OpenAI()
 
 #embeddings = OpenAIEmbeddings()
@@ -381,12 +382,12 @@ def tracked_llm_call(prompt):
     import time
     start = time.time()
 
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": str(prompt)}]
     )
 
-    content = response.choices[0].message.content
+    content = response["choices"][0]["message"]["content"]
 
     duration = time.time() - start
 
@@ -395,7 +396,6 @@ def tracked_llm_call(prompt):
     st.session_state.metrics["tokens"] += tokens
     st.session_state.metrics["response_times"].append(duration)
 
-    # Return object with .content to match your code
     class Resp:
         def __init__(self, content):
             self.content = content
