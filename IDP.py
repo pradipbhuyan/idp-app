@@ -23,7 +23,7 @@ import streamlit as st
 
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+#from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
@@ -107,6 +107,19 @@ uploaded_file = st.file_uploader(
 # ------------------------------
 # HELPERS
 # ------------------------------
+
+def simple_text_splitter(text, chunk_size=800, overlap=150):
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - overlap
+
+    return chunks
+
 
 def save_temp_file(uploaded_file):
     suffix = Path(uploaded_file.name).suffix
@@ -365,8 +378,13 @@ def build_resume(data, template_file):
 import uuid
 
 def create_vectorstore(docs):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
-    chunks = splitter.split_documents(docs)
+    chunks = []
+
+    for doc in docs:
+    split_texts = simple_text_splitter(doc.page_content)
+        for chunk in split_texts:
+        chunks.append(Document(page_content=chunk))
+            
     db_path = f"./chroma_db_{uuid.uuid4().hex}"
     return Chroma.from_documents(chunks, embedding=embeddings)
 
