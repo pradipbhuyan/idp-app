@@ -21,7 +21,9 @@ import pandas as pd
 import os
 import streamlit as st
 
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+#os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 #from langchain.text_splitter import RecursiveCharacterTextSplitter
 #from langchain_community.vectorstores import Chroma
