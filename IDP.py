@@ -45,6 +45,51 @@ from streamlit_pdf_viewer import pdf_viewer
 
 st.set_page_config("IDP - Professional", layout="wide")
 
+# ------------------------------
+# SIMPLE LOGIN WITH LOGO
+# ------------------------------
+
+def login():
+    from pathlib import Path
+
+    # Load logo
+    logo_path = Path(__file__).parent / "IDP-Logo1.png"
+
+    # Center layout
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        # Show logo if exists
+        if logo_path.exists():
+            st.image(logo_path, width=200)
+
+        st.markdown("### 🔐 Sign In")
+
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login", use_container_width=True):
+            if username == "admin" and password == "1234":
+                st.session_state["logged_in"] = True
+                st.success("Login successful")
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+
+with st.sidebar:
+    if st.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.rerun()
+
+# Initialize session
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+# Gate the app
+if not st.session_state["logged_in"]:
+    login()
+    st.stop()
+
 from pathlib import Path
 
 logo_path = Path(__file__).parent / "IDP-Logo1.png"
