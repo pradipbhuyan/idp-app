@@ -46,22 +46,28 @@ from streamlit_pdf_viewer import pdf_viewer
 st.set_page_config("IDP - Professional", layout="wide")
 
 # ------------------------------
-# SIMPLE LOGIN WITH LOGO
+# LOGIN / LOGOUT SYSTEM (SECRETS-BASED)
 # ------------------------------
 
-def login():
-    from pathlib import Path
+import streamlit as st
+from pathlib import Path
 
-    # Load logo
+# Load users from secrets
+USERS = st.secrets.get("users", {})
+
+# ------------------------------
+# LOGIN FUNCTION
+# ------------------------------
+def login():
     logo_path = Path(__file__).parent / "IDP-Logo1.png"
 
     # Center layout
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        # Show logo if exists
+        # Show logo
         if logo_path.exists():
-            st.image(logo_path, width=200)
+            st.image(logo_path, width=220)
 
         st.markdown("### 🔐 Sign In")
 
@@ -69,28 +75,58 @@ def login():
         password = st.text_input("Password", type="password")
 
         if st.button("Login", use_container_width=True):
-            if username == "admin" and password == "1234":
+
+            if username in USERS and USERS[username]["password"] == password:
                 st.session_state["logged_in"] = True
-                st.success("Login successful")
+                st.session_state["user"] = username
+                st.session_state["role"] = USERS[username].get("role", "user")
+
+                st.success(f"Welcome {username}")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
 
-with st.sidebar:
-    if st.button("Logout"):
-        st.session_state["logged_in"] = False
-        st.rerun()
 
-# Initialize session
+# ------------------------------
+# SESSION INIT
+# ------------------------------
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
-# Gate the app
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
+if "role" not in st.session_state:
+    st.session_state["role"] = None
+
+
+# ------------------------------
+# LOGIN GATE (VERY IMPORTANT)
+# ------------------------------
 if not st.session_state["logged_in"]:
     login()
     st.stop()
 
-from pathlib import Path
+
+# ------------------------------
+# SIDEBAR (USER INFO + LOGOUT)
+# ------------------------------
+with st.sidebar:
+    st.markdown("### 👤 User Info")
+
+    st.write(f"**User:** {st.session_state['user']}")
+    st.write(f"**Role:** {st.session_state['role']}")
+
+    if st.button("🚪 Logout"):
+        # Clear only relevant keys (safer than full clear)
+        for key in ["logged_in", "user", "role"]:
+            if key in st.session_state:
+                del st.session_state[key]
+
+        st.success("Logged out")
+        st.rerun()
+
+
 
 logo_path = Path(__file__).parent / "IDP-Logo1.png"
 
