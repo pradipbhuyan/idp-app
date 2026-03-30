@@ -46,14 +46,29 @@ from streamlit_pdf_viewer import pdf_viewer
 st.set_page_config("IDP - Professional", layout="wide")
 
 # ------------------------------
-# LOGIN / LOGOUT SYSTEM (SECRETS-BASED)
+# LOGIN + API KEY VALIDATION
 # ------------------------------
 
 import streamlit as st
 from pathlib import Path
+from openai import OpenAI
 
-# Load users from secrets
 USERS = st.secrets.get("users", {})
+
+# ------------------------------
+# VALIDATE API KEY
+# ------------------------------
+def validate_api_key(api_key):
+    try:
+        client = OpenAI(api_key=api_key)
+
+        # Lightweight test call
+        client.models.list()
+
+        return True
+    except Exception:
+        return False
+
 
 # ------------------------------
 # LOGIN FUNCTION
@@ -61,11 +76,9 @@ USERS = st.secrets.get("users", {})
 def login():
     logo_path = Path(__file__).parent / "IDP-Logo1.png"
 
-    # Center layout
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        # Show logo
         if logo_path.exists():
             st.image(logo_path, width=220)
 
@@ -73,18 +86,33 @@ def login():
 
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
+        api_key = st.text_input("OpenAI API Key", type="password")
 
         if st.button("Login", use_container_width=True):
 
-            if username in USERS and USERS[username]["password"] == password:
-                st.session_state["logged_in"] = True
-                st.session_state["user"] = username
-                st.session_state["role"] = USERS[username].get("role", "user")
-
-                st.success(f"Welcome {username}")
-                st.rerun()
-            else:
+            # Validate user
+            if username not in USERS or USERS[username]["password"] != password:
                 st.error("Invalid username or password")
+                return
+
+            if not api_key:
+                st.error("Please enter your OpenAI API key")
+                return
+
+            # 🔑 Validate API key
+            with st.spinner("Validating API key..."):
+                if not validate_api_key(api_key):
+                    st.error("Invalid OpenAI API key")
+                    return
+
+            # Save session
+            st.session_state["logged_in"] = True
+            st.session_state["user"] = username
+            st.session_state["role"] = USERS[username].get("role", "user")
+            st.session_state["api_key"] = api_key
+
+            st.success(f"Welcome {username}")
+            st.rerun()
 
 
 # ------------------------------
@@ -99,9 +127,12 @@ if "user" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state["role"] = None
 
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
+
 
 # ------------------------------
-# LOGIN GATE (VERY IMPORTANT)
+# LOGIN GATE
 # ------------------------------
 if not st.session_state["logged_in"]:
     login()
@@ -113,20 +144,18 @@ if not st.session_state["logged_in"]:
 # ------------------------------
 with st.sidebar:
     st.markdown("### 👤 User Info")
-
     st.write(f"**User:** {st.session_state['user']}")
     st.write(f"**Role:** {st.session_state['role']}")
 
+    st.success("🔑 API key loaded securely")
+
     if st.button("🚪 Logout"):
-        # Clear only relevant keys (safer than full clear)
-        for key in ["logged_in", "user", "role"]:
+        for key in ["logged_in", "user", "role", "api_key"]:
             if key in st.session_state:
                 del st.session_state[key]
 
         st.success("Logged out")
         st.rerun()
-
-
 
 logo_path = Path(__file__).parent / "IDP-Logo1.png"
 
