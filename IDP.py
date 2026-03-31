@@ -164,6 +164,13 @@ with st.sidebar:
         st.success("Logged out")
         st.rerun()
 
+    st.markdown("---")
+
+    # 💰 Cost
+    cost = st.session_state.get("metrics", {}).get("cost", 0)
+    st.write(f"Session Cost 💰 ${round(cost, 6)}")
+    
+
 logo_path = Path(__file__).parent / "IDP-Logo1.png"
 
 col1, col2 = st.columns([1, 7], gap="small")
@@ -198,9 +205,15 @@ if "suggested_questions" not in st.session_state:
 if "metrics" not in st.session_state:
     st.session_state.metrics = {
         "tokens": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost": 0.0,
         "response_times": [],
-        "accuracy_scores": []
+        "calls": 0
     }
+
+if "doc_costs" not in st.session_state:
+    st.session_state.doc_costs = {}
 
 if "doc_metrics" not in st.session_state:
     st.session_state.doc_metrics = {}
@@ -485,27 +498,43 @@ import time
 
 def tracked_llm_call(prompt):
     start = time.time()
-
     response = get_llm().invoke(prompt)
-
     duration = time.time() - start
-    tokens = len(str(prompt)) // 4 + len(str(response.content)) // 4
+    
+    # Try real token usage
+    try:
+        usage = response.response_metadata.get("token_usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
+    except:
+        input_tokens = len(str(prompt)) // 4
+        output_tokens = len(str(response.content)) // 4
 
-    # Global metrics
-    st.session_state.metrics["tokens"] += tokens
-    st.session_state.metrics["response_times"].append(duration)
+    total_tokens = input_tokens + output_tokens
 
-    # ✅ Per-document metrics
-    current_file = st.session_state.get("current_file")
+    # Pricing (gpt-4o-mini)
+    input_cost = input_tokens * 0.00015 / 1000
+    output_cost = output_tokens * 0.0006 / 1000
+    total_cost = input_cost + output_cost
 
-    if current_file and current_file in st.session_state.doc_metrics:
-        doc_metric = st.session_state.doc_metrics[current_file]
-        doc_metric["tokens"] += tokens
-        doc_metric["response_times"].append(duration)
-        doc_metric["calls"] += 1
+    # ---- GLOBAL METRICS ----
+    m = st.session_state.metrics
+    m["tokens"] += total_tokens
+    m["input_tokens"] += input_tokens
+    m["output_tokens"] += output_tokens
+    m["cost"] += total_cost
+    m["calls"] += 1
+    m["response_times"].append(duration)
+
+    # ---- DOCUMENT METRICS ----
+    doc = st.session_state.get("current_file", "unknown")
+    if doc not in st.session_state.doc_costs:
+        st.session_state.doc_costs[doc] = {"cost": 0, "tokens": 0}
+        
+    st.session_state.doc_costs[doc]["cost"] += total_cost
+    st.session_state.doc_costs[doc]["tokens"] += total_tokens
 
     return response
-
 # ------------------------------
 # PROCESSING WITH PROGRESS
 # ------------------------------
@@ -785,44 +814,55 @@ if selected_tab == "Concur":
 # METRICS
 
 if selected_tab == "Metrics":
-    st.subheader("📊 System Metrics")
+    st.subheader("📊 Cost & Usage Analytics")
 
-    metrics = st.session_state.metrics
+    m = st.session_state.metrics
 
-    if not st.session_state.processed_file:
-        st.warning("Upload and process a document to view metrics.")
+    if m["calls"] == 0:
+        st.warning("No usage yet")
+        st.stop()
 
-    total_calls = len(metrics["response_times"])
-    avg_time = sum(metrics["response_times"]) / total_calls if total_calls else 0
+    avg_time = sum(m["response_times"]) / m["calls"]
 
-    st.metric("Total Token Usage", metrics["tokens"])
-    st.metric("Total LLM Calls", total_calls)
-    st.metric("Avg Response Time (s)", round(avg_time, 2))
+    # ---- TOP KPIs ----
+    col1, col2, col3, col4 = st.columns(4)
 
-    # Basic accuracy placeholder (can improve later)
-    if st.session_state.structured_data:
-        accuracy = 0.85
-        st.metric("Estimated Accuracy", f"{int(accuracy*100)}%")
+    col1.metric("💰 Total Cost ($)", round(m["cost"], 6))
+    col2.metric("🧠 Total Tokens", m["tokens"])
+    col3.metric("⚡ LLM Calls", m["calls"])
+    col4.metric("⏱ Avg Time (s)", round(avg_time, 2))
 
-    if metrics["response_times"]:
+    st.markdown("---")
+
+    # ---- TOKEN BREAKDOWN ----
+    st.subheader("🔎 Token Breakdown")
+
+    st.write(f"Input Tokens: {m['input_tokens']}")
+    st.write(f"Output Tokens: {m['output_tokens']}")
+
+    # ---- COST OVER TIME ----
+    if m["response_times"]:
         df = pd.DataFrame({
-            "Call #": list(range(len(metrics["response_times"]))),
-            "Response Time (s)": metrics["response_times"]
+            "Call": list(range(len(m["response_times"]))),
+            "Response Time": m["response_times"]
         })
+        st.line_chart(df.set_index("Call"))
 
-        st.line_chart(df.set_index("Call #"))
 
-    else:
-        st.info("No LLM calls yet. Upload a document to see metrics.")
+    # ---- DOCUMENT COST ----
+    st.subheader("📄 Cost per Document")
 
-    st.subheader("📂 Per Document Metrics")
+    doc_data = [
+        {"Document": k, "Cost": v["cost"], "Tokens": v["tokens"]}
+        for k, v in st.session_state.doc_costs.items()
+    ]
 
-    for file, data in st.session_state.doc_metrics.items():
-        total_calls = data["calls"]
-        avg_time = sum(data["response_times"]) / total_calls if total_calls else 0
+    doc_df = pd.DataFrame(doc_data)
 
-        st.markdown(f"### 📄 {file}")
-        st.write(f"Tokens: {data['tokens']}")
-        st.write(f"Calls: {total_calls}")
-        st.write(f"Avg Time: {round(avg_time, 2)} sec")
+    if not doc_df.empty:
+        st.dataframe(doc_df)
+        st.bar_chart(doc_df.set_index("Document")[["Cost"]])
 
+    # ---- COST ALERT ----
+    if m["cost"] > 0.05:
+        st.warning("⚠️ High usage detected (>$0.05)")
