@@ -795,7 +795,7 @@ if selected_tab == "Chat":
                     - Answer ONLY from the provided context
                     - DO NOT add external knowledge
                     - DO NOT assume anything
-                    - If answer is not found, say: "Not found in document"
+                    - If partially found, return best matching value
                     - Keep answer concise and factual
                     - NO markdown, NO formatting
                     
