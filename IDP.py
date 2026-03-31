@@ -546,10 +546,11 @@ if uploaded_file:
     file_hash = hashlib.md5(uploaded_file.getvalue()).hexdigest()
 
     if st.session_state.get("file_hash") != file_hash:
-         
+
         st.session_state.vectorstore = None
         st.session_state.chat_history = []
         st.session_state.full_text = None
+        st.session_state.suggested_questions = []
 
         current_file = uploaded_file.name
         st.session_state.current_file = current_file
