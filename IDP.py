@@ -37,7 +37,7 @@ from streamlit_pdf_viewer import pdf_viewer
 # Use API key through input from user
 def get_llm():
     return ChatOpenAI(
-        model="gpt-4o",
+        model="gpt-5",
         temperature=0,
         api_key=st.session_state["api_key"]
     )
