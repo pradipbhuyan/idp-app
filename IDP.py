@@ -504,6 +504,12 @@ def create_vectorstore(docs):
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
     chunks = splitter.split_documents(docs)
 
+    # 🔥 Tag each chunk with document name
+    for chunk in chunks:
+        chunk.metadata = {
+            "source": st.session_state.current_file
+        }
+
     return Chroma.from_documents(
         chunks,
         embedding=get_embeddings()
@@ -702,7 +708,11 @@ if selected_tab == "Chat":
                     )
 
                     # Retrieve context
-                    docs = st.session_state.vectorstore.similarity_search(q, k=2)
+                    docs = st.session_state.vectorstore.similarity_search(
+                        query,
+                        k=2,
+                        filter={"source": st.session_state.current_file}
+                    )
                     context = "\n\n".join([d.page_content[:800] for d in docs])
 
                     # Generate response
