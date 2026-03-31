@@ -275,6 +275,7 @@ def process_file(uploaded_file):
         ])
 
         response = get_llm().invoke([message])
+        content = response.content if response and response.content else ""
         documents.append(Document(page_content=response.content))
 
     else:
