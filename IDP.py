@@ -543,6 +543,9 @@ if uploaded_file:
 
     if st.session_state.get("processed_file") != uploaded_file.name:
 
+        st.session_state.vectorstore = None
+        st.session_state.chat_history = []
+
         current_file = uploaded_file.name
         st.session_state.current_file = current_file
 
