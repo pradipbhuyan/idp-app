@@ -37,7 +37,7 @@ from streamlit_pdf_viewer import pdf_viewer
 # Use API key through input from user
 def get_llm():
     return ChatOpenAI(
-        model="gpt-5",
+        model=st.session_state.get("model_choice", "gpt-4o-mini"),
         temperature=0,
         api_key=st.session_state["api_key"]
     )
@@ -157,6 +157,20 @@ with st.sidebar:
 
     st.success("🔑 API key loaded securely")
 
+    # 🤖 Model Selection
+    st.markdown("### 🤖 Model")
+    
+    model_choice = st.selectbox(
+        "Choose Model",
+        ["gpt-4o-mini", "gpt-4o", "gpt-5"],
+        index=0
+    )
+    
+    # Store in session
+    st.session_state["model_choice"] = model_choice
+
+    st.caption(f"Using: {st.session_state['model_choice']}")
+    
     if st.button("🚪 Logout"):
         for key in ["logged_in", "user", "role", "api_key"]:
             if key in st.session_state:
