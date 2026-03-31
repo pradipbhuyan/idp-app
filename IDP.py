@@ -120,7 +120,6 @@ def login():
             st.session_state["api_key"] = api_key
 
             st.success(f"Welcome {username}")
-            st.rerun()
 
 # ------------------------------
 # SESSION INIT
@@ -541,7 +540,15 @@ def tracked_llm_call(prompt):
 
 if uploaded_file:
 
-    if st.session_state.get("processed_file") != uploaded_file.name:
+    import hashlib
+    file_hash = hashlib.md5(uploaded_file.getvalue()).hexdigest()
+
+    if st.session_state.get("file_hash") != file_hash:
+        st.session_state.file_hash = file_hash
+         
+        st.session_state.vectorstore = None
+        st.session_state.chat_history = []
+        st.session_state.full_text = None
 
         current_file = uploaded_file.name
         st.session_state.current_file = current_file
@@ -554,9 +561,6 @@ if uploaded_file:
             }
        
         progress = st.progress(0, text="Processing Started...")
-        
-        st.session_state.vectorstore = None
-        st.session_state.chat_history = []
         
         docs = process_file(uploaded_file)
         progress.progress(20, text="File processed")
@@ -661,9 +665,10 @@ if selected_tab == "Chat":
     if not st.session_state.vectorstore:
         st.warning("Please upload and process a document first")
         st.stop()
-        for msg in st.session_state.chat_history:
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
+        
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
         # 🎯 Suggested Questions UI
         if st.session_state.suggested_questions:
