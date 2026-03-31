@@ -259,7 +259,7 @@ def process_file(uploaded_file):
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
         ])
 
-        response = llm.invoke([message])
+        response = get_llm().invoke([message])
         documents.append(Document(page_content=response.content))
 
     else:
