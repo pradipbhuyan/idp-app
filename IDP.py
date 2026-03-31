@@ -270,13 +270,31 @@ def process_file(uploaded_file):
         encoded = base64.b64encode(uploaded_file.getvalue()).decode()
 
         message = HumanMessage(content=[
-            {"type": "text", "text": "Extract all readable text with structure (headings, tables, key-value pairs)."},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
-        ])
+            {
+                "type": "text",
+                "text": """
+        You are an OCR assistant.
+        
+        Extract ALL visible text from the image.
+        
+        Rules:
+        - Do NOT skip anything
+        - Preserve numbers, amounts, dates
+        - Preserve line structure
+        - If it's a receipt, extract:
+          - vendor name
+          - date
+          - items
+          - total
+        - Output plain text only
+        """
+            },
 
         try:
             response = get_llm().invoke([message])
             content = getattr(response, "content", "") or ""
+            if not content.strip():
+                content = "No readable text found in image"
         except Exception:
             content = ""
     
@@ -600,9 +618,6 @@ if uploaded_file:
         progress = st.progress(0, text="Processing Started...")
         
         docs = process_file(uploaded_file)
-        if not docs:
-            st.error("Could not extract content from file")
-            st.stop()
             
         progress.progress(20, text="File processed")
 
