@@ -698,7 +698,7 @@ if uploaded_file:
 # ------------------------------
 
 #tabs = ["Preview", "JSON", "Chat", "Download", "Concur"]
-tabs = ["Preview", "JSON", "Chat", "Download", "Concur", "Metrics"]
+tabs = ["Preview", "JSON", "Download", "Concur", "Chat", "Metrics"]
 
 selected_tab = st.radio(
     "",
