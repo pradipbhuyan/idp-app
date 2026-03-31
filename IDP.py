@@ -662,22 +662,25 @@ if selected_tab == "JSON":
 
 # CHAT
 if selected_tab == "Chat":
+
     if not st.session_state.vectorstore:
         st.warning("Please upload and process a document first")
-        st.stop()
-        
-    for msg in st.session_state.chat_history:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
 
-        # 🎯 Suggested Questions UI
+    else:
+        # 👇 SHOW CHAT HISTORY
+        for msg in st.session_state.chat_history:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
+
+        # 🎯 Suggested Questions
         if st.session_state.suggested_questions:
             st.markdown("### 💡 Suggested Questions")
 
             cols = st.columns(len(st.session_state.suggested_questions))
 
             for i, q in enumerate(st.session_state.suggested_questions):
-                if cols[i].button(q):
+                if cols[i].button(q, key=f"suggest_{i}"):
+
                     st.session_state.chat_history.append({"role": "user", "content": q})
 
                     docs = st.session_state.vectorstore.similarity_search(q, k=3)
@@ -690,17 +693,21 @@ if selected_tab == "Chat":
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.write(response)
 
-
+        # 💬 User input
         query = st.chat_input("Ask a question")
 
         if query:
             st.session_state.chat_history.append({"role": "user", "content": query})
+
             docs = st.session_state.vectorstore.similarity_search(query, k=3)
             context = "\n\n".join([d.page_content for d in docs])
-            response = tracked_llm_call(f"Answer strictly from context.\nContext:\n{context}\nQ:{query}").content
+
+            response = tracked_llm_call(
+                f"Answer strictly from context.\nContext:\n{context}\nQ:{query}"
+            ).content
+
             st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.write(response)
-            
+            st.write(response)            
 
 # DOWNLOAD
 if selected_tab == "Download":
