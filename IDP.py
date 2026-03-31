@@ -543,9 +543,6 @@ if uploaded_file:
 
     if st.session_state.get("processed_file") != uploaded_file.name:
 
-        st.session_state.vectorstore = None
-        st.session_state.chat_history = []
-
         current_file = uploaded_file.name
         st.session_state.current_file = current_file
 
@@ -557,7 +554,10 @@ if uploaded_file:
             }
        
         progress = st.progress(0, text="Processing Started...")
-
+        
+        st.session_state.vectorstore = None
+        st.session_state.chat_history = []
+        
         docs = process_file(uploaded_file)
         progress.progress(20, text="File processed")
 
@@ -574,6 +574,8 @@ if uploaded_file:
         progress.progress(80, text="Structured data extracted")
 
         st.session_state.vectorstore = create_vectorstore(docs)
+        # 🔥 FORCE STREAMLIT TO USE NEW STATE
+        st.rerun()
         progress.progress(100, text="Vector index created")
 
         # 🎯 Auto-suggested questions
@@ -656,7 +658,9 @@ if selected_tab == "JSON":
 
 # CHAT
 if selected_tab == "Chat":
-    if st.session_state.vectorstore:
+    if not st.session_state.vectorstore:
+        st.warning("Please upload and process a document first")
+        st.stop()
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
