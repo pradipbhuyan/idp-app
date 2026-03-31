@@ -163,7 +163,7 @@ with col2:
     st.caption("AI-powered document understanding & automation")
 
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
+#llm = ChatOpenAI(model="gpt-4o", temperature=0)
 embeddings = OpenAIEmbeddings()
 
 # Session state
@@ -476,7 +476,7 @@ import time
 def tracked_llm_call(prompt):
     start = time.time()
 
-    response = llm.invoke(prompt)
+    response = get_llm().invoke(prompt)
 
     duration = time.time() - start
     tokens = len(str(prompt)) // 4 + len(str(response.content)) // 4
