@@ -604,15 +604,15 @@ if uploaded_file:
 
         elif doc_type == "report":
             st.session_state.suggested_questions = [
-                "Summarize this report",
-                "What are the key findings?",
-                "Who is the author?",
+                "what is this report about",
+                "identify the document flow",
+                "What are the key points?",
                 "What are the main sections?"
             ]
 
         else:
             st.session_state.suggested_questions = [
-                "Summarize this document",
+                "What is this document",
                 "What are the key points?",
                 "Extract important information"
             ]
