@@ -12,11 +12,6 @@ from io import BytesIO
 
 import streamlit as st
 import pandas as pd
-#import truststore
-#truststore.inject_into_ssl()
-
-#from dotenv import load_dotenv
-#load_dotenv()
 
 import os
 import streamlit as st
@@ -114,7 +109,6 @@ def login():
             st.success(f"Welcome {username}")
             st.rerun()
 
-
 # ------------------------------
 # SESSION INIT
 # ------------------------------
@@ -188,9 +182,6 @@ if "processed_file" not in st.session_state:
 
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = 0
-
-if "recommendations" not in st.session_state:
-    st.session_state.recommendations = None
 
 if "suggested_questions" not in st.session_state:
     st.session_state.suggested_questions = []
@@ -506,47 +497,6 @@ def tracked_llm_call(prompt):
     return response
 
 # ------------------------------
-# NEW: Recommendation Generator
-# ------------------------------
-
-def generate_recommendations(doc_type, data, text):
-    # Only enable for Resume and Report
-    if doc_type not in ["resume", "report"]:
-        return None
-    prompt = f"""
-You are an intelligent assistant.
-
-Based on the document type and extracted data, provide actionable recommendations.
-
-DOCUMENT TYPE: {doc_type}
-
-DATA:
-{json.dumps(data)}
-
-RULES:
-- Be concise
-- Provide 3-6 bullet recommendations
-- Make them practical
-- No markdown symbols (*, #)
-- Plain text bullets using '-'
-
-Examples:
-Invoice → detect anomalies, missing fields, tax issues
-Resume → skill gaps, improvements
-Report → summary insights, risks
-Ticket → resolution suggestions
-
-TEXT:
-{text[:2000]}
-"""
-
-    try:
-        return tracked_llm_call(prompt).content
-    except Exception as e:
-        return f"Error generating recommendations: {str(e)}"
-
-
-# ------------------------------
 # PROCESSING WITH PROGRESS
 # ------------------------------
 
@@ -580,12 +530,6 @@ if uploaded_file:
             st.session_state.doc_type
         )
         progress.progress(80, text="Structured data extracted")
-
-        st.session_state.recommendations = generate_recommendations(
-            st.session_state.doc_type,
-            st.session_state.structured_data,
-            st.session_state.full_text
-        )
 
         st.session_state.vectorstore = create_vectorstore(docs)
         progress.progress(100, text="Vector index created")
@@ -629,21 +573,13 @@ if uploaded_file:
 
     st.success(f"✅ Processed Successfully | Type: {st.session_state.doc_type.upper()}")
 
-# ------------------------------
-# SIDEBAR JSON
-# ------------------------------
-
-with st.sidebar:
-    st.header("📌 Extracted JSON")
-    if st.session_state.structured_data:
-        st.json(st.session_state.structured_data)
 
 # ------------------------------
 # TABS
 # ------------------------------
 
 #tabs = ["Preview", "JSON", "Chat", "Download", "Concur"]
-tabs = ["Preview", "JSON", "Chat", "Download", "Concur", "AI Recommendations", "Metrics"]
+tabs = ["Preview", "JSON", "Chat", "Download", "Concur", "Metrics"]
 
 selected_tab = st.radio(
     "",
@@ -835,32 +771,6 @@ if selected_tab == "Concur":
             st.json(payload)
     else:
         st.warning("Only Invoice or Ticket supported")
-
-# ------------------------------
-# NEW TAB IMPLEMENTATION
-# ------------------------------
-
-if selected_tab == "AI Recommendations":
-    st.subheader("🤖 AI Recommendations")
-
-    if st.session_state.recommendations:
-        st.text_area(
-            "Insights & Suggestions",
-            st.session_state.recommendations,
-            height=200
-        )
-
-        # Optional: regenerate button
-        if st.button("Regenerate Recommendations"):
-            st.session_state.recommendations = generate_recommendations(
-                st.session_state.doc_type,
-                st.session_state.structured_data,
-                st.session_state.full_text
-            )
-            st.rerun()
-
-    else:
-        st.info("No recommendations for detected document type.")
 
 # METRICS
 
