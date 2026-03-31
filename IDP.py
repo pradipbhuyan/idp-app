@@ -121,6 +121,8 @@ def login():
 
             st.success(f"Welcome {username}")
 
+            st.rerun()
+
 # ------------------------------
 # SESSION INIT
 # ------------------------------
@@ -544,7 +546,6 @@ if uploaded_file:
     file_hash = hashlib.md5(uploaded_file.getvalue()).hexdigest()
 
     if st.session_state.get("file_hash") != file_hash:
-        st.session_state.file_hash = file_hash
          
         st.session_state.vectorstore = None
         st.session_state.chat_history = []
@@ -578,8 +579,7 @@ if uploaded_file:
         progress.progress(80, text="Structured data extracted")
 
         st.session_state.vectorstore = create_vectorstore(docs)
-        # 🔥 FORCE STREAMLIT TO USE NEW STATE
-        st.rerun()
+      
         progress.progress(100, text="Vector index created")
 
         # 🎯 Auto-suggested questions
@@ -617,7 +617,7 @@ if uploaded_file:
             ]
 
         st.session_state.processed_file = uploaded_file.name
-        #progress.empty()
+        st.session_state.file_hash = file_hash
 
     st.success(f"✅ Processed Successfully | Type: {st.session_state.doc_type.upper()}")
 
