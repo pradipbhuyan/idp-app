@@ -34,6 +34,19 @@ from langchain_core.messages import HumanMessage
 from docx import Document as DocxDocument
 from streamlit_pdf_viewer import pdf_viewer
 
+# Use API key through input from user
+def get_llm():
+    return ChatOpenAI(
+        model="gpt-4o",
+        temperature=0,
+        api_key=st.session_state["api_key"]
+    )
+
+def get_embeddings():
+    return OpenAIEmbeddings(
+        api_key=st.session_state["api_key"]
+    )
+
 # ------------------------------
 # INIT
 # ------------------------------
@@ -161,10 +174,6 @@ with col1:
 with col2:
     st.markdown("## Intelligent Document Processor")
     st.caption("AI-powered document understanding & automation")
-
-
-#llm = ChatOpenAI(model="gpt-4o", temperature=0)
-embeddings = OpenAIEmbeddings()
 
 # Session state
 for key in ["structured_data", "doc_type", "vectorstore", "full_text"]:
