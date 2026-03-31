@@ -290,7 +290,15 @@ def process_file(uploaded_file):
         elif suffix == ".docx":
             documents.extend(load_docx_safe(file_path))
         elif suffix == ".pptx":
-            documents.extend(UnstructuredPowerPointLoader(file_path).load())
+            from pptx import Presentation
+            prs = Presentation(file_path)
+            text = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        text.append(shape.text)
+            documents.append(Document(page_content="\n".join(text)))
+        
         elif suffix == ".xlsx":
             documents.extend(UnstructuredExcelLoader(file_path).load())
 
