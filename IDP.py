@@ -274,9 +274,13 @@ def process_file(uploaded_file):
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
         ])
 
-        response = get_llm().invoke([message])
-        content = response.content if response and response.content else ""
-        documents.append(Document(page_content=response.content))
+        try:
+            response = get_llm().invoke([message])
+            content = getattr(response, "content", "") or ""
+        except Exception:
+            content = ""
+    
+        documents.append(Document(page_content=str(content)))
 
     else:
         file_path = save_temp_file(uploaded_file)
@@ -596,9 +600,20 @@ if uploaded_file:
         progress = st.progress(0, text="Processing Started...")
         
         docs = process_file(uploaded_file)
+        if not docs:
+            st.error("Could not extract content from file")
+            st.stop()
+            
         progress.progress(20, text="File processed")
 
-        st.session_state.full_text = "\n".join([d.page_content for d in docs])
+        st.session_state.full_text = "\n".join(
+            [
+                str(d.page_content)
+                for d in docs
+                if d is not None and getattr(d, "page_content", None)
+            ]
+        )
+        
         progress.progress(40, text="Text extracted")
 
         st.session_state.doc_type = detect_document_type(st.session_state.full_text)
