@@ -269,27 +269,36 @@ def process_file(uploaded_file):
     if suffix in [".png", ".jpg", ".jpeg"]:
         encoded = base64.b64encode(uploaded_file.getvalue()).decode()
 
-        message = HumanMessage(content=[
+        message = HumanMessage(
+        content=[
             {
                 "type": "text",
-                "text": """
-        You are an OCR assistant.
-        
-        Extract ALL visible text from the image.
-        
-        Rules:
-        - Do NOT skip anything
-        - Preserve numbers, amounts, dates
-        - Preserve line structure
-        - If it's a receipt, extract:
-          - vendor name
-          - date
-          - items
-          - total
-        - Output plain text only
-        """
-            },
+                "text": """You are an OCR assistant.
+    
+            Extract ALL visible text from the image.
+            
+            Rules:
+            - Do NOT skip anything
+            - Preserve numbers, amounts, dates
+            - Preserve line structure
+            - If it's a receipt, extract:
+              - vendor name
+              - date
+              - items
+              - total
+            - Output plain text only
+            """
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{encoded}"
+                        }
+                    }
+                ]
+            )
 
+            
         try:
             response = get_llm().invoke([message])
             content = getattr(response, "content", "") or ""
