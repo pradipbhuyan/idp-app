@@ -660,19 +660,19 @@ if selected_tab == "JSON":
     if st.session_state.structured_data:
         st.json(st.session_state.structured_data)
 
+# ------------------------------
 # CHAT
+# ------------------------------
 if selected_tab == "Chat":
 
+    # ❗ If no document processed
     if not st.session_state.vectorstore:
         st.warning("Please upload and process a document first")
 
     else:
-        # 👇 SHOW CHAT HISTORY
-        for msg in st.session_state.chat_history:
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
-
-        # 🎯 Suggested Questions
+        # ------------------------------
+        # 🎯 Suggested Questions FIRST
+        # ------------------------------
         if st.session_state.suggested_questions:
             st.markdown("### 💡 Suggested Questions")
 
@@ -681,34 +681,63 @@ if selected_tab == "Chat":
             for i, q in enumerate(st.session_state.suggested_questions):
                 if cols[i].button(q, key=f"suggest_{i}"):
 
-                    st.session_state.chat_history.append({"role": "user", "content": q})
+                    # Add user question
+                    st.session_state.chat_history.append(
+                        {"role": "user", "content": q}
+                    )
 
+                    # Retrieve context
                     docs = st.session_state.vectorstore.similarity_search(q, k=3)
                     context = "\n\n".join([d.page_content for d in docs])
 
+                    # Generate response
                     response = tracked_llm_call(
                         f"Answer strictly from context.\nContext:\n{context}\nQ:{q}"
                     ).content
 
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+                    # Store response
+                    st.session_state.chat_history.append(
+                        {"role": "assistant", "content": response}
+                    )
+
+                    # Show response immediately
                     st.write(response)
 
-        # 💬 User input
+        # ------------------------------
+        # 💬 Chat History
+        # ------------------------------
+        for msg in st.session_state.chat_history:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
+
+        # ------------------------------
+        # ✏️ User Input
+        # ------------------------------
         query = st.chat_input("Ask a question")
 
         if query:
-            st.session_state.chat_history.append({"role": "user", "content": query})
+            # Add user message
+            st.session_state.chat_history.append(
+                {"role": "user", "content": query}
+            )
 
+            # Retrieve context
             docs = st.session_state.vectorstore.similarity_search(query, k=3)
             context = "\n\n".join([d.page_content for d in docs])
 
+            # Generate response
             response = tracked_llm_call(
                 f"Answer strictly from context.\nContext:\n{context}\nQ:{query}"
             ).content
 
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            st.write(response)            
+            # Store response
+            st.session_state.chat_history.append(
+                {"role": "assistant", "content": response}
+            )
 
+            # Display response
+            st.write(response)
+            
 # DOWNLOAD
 if selected_tab == "Download":
     if st.session_state.structured_data:
