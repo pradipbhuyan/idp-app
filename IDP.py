@@ -472,13 +472,14 @@ def build_resume(data, template_file):
     doc.save(buffer)
     return buffer.getvalue()
 
-import uuid
-
 def create_vectorstore(docs):
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
     chunks = splitter.split_documents(docs)
-    db_path = f"./chroma_db_{uuid.uuid4().hex}"
-    return Chroma.from_documents(chunks, embedding=embeddings, persist_directory=db_path)
+
+    return Chroma.from_documents(
+        chunks,
+        embedding=get_embeddings()
+    )
 
 import time
 
