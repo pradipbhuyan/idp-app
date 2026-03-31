@@ -709,7 +709,7 @@ if selected_tab == "Chat":
 
                     # Retrieve context
                     docs = st.session_state.vectorstore.similarity_search(
-                        query,
+                        q,
                         k=2,
                         filter={"source": st.session_state.current_file}
                     )
@@ -763,7 +763,11 @@ if selected_tab == "Chat":
             )
 
             # Retrieve context
-            docs = st.session_state.vectorstore.similarity_search(query, k=3)
+            docs = st.session_state.vectorstore.similarity_search(
+                query,   
+                k=2,
+                filter={"source": st.session_state.current_file}
+            )
             context = "\n\n".join([d.page_content for d in docs])
 
             # Generate response
