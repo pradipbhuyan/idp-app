@@ -304,7 +304,8 @@ def process_file(uploaded_file):
             # Convert dataframe to readable text
             text = df.to_string(index=False)
             documents.append(Document(page_content=text))
-            return documents
+            
+        return documents
 
 def safe_json_parse(response):
     try:
