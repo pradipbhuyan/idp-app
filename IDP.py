@@ -684,6 +684,27 @@ if selected_tab == "Preview":
             doc = DocxDocument(path)
             text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
             st.text_area("DOCX Preview", text, height=200)
+        elif uploaded_file.name.endswith(".pptx"):
+            from pptx import Presentation
+            path = save_temp_file(uploaded_file)
+            prs = Presentation(path)
+            slides_text = []
+            for i, slide in enumerate(prs.slides):
+                slide_text = [f"Slide {i+1}"]
+        
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        slide_text.append(shape.text.strip())
+        
+                slides_text.append("\n".join(slide_text))
+            st.text_area("PPTX Preview", "\n\n".join(slides_text), height=300)
+        elif uploaded_file.name.endswith(".xlsx"):
+            import pandas as pd
+            path = save_temp_file(uploaded_file)
+            df = pd.read_excel(path)
+            st.dataframe(df)
+            # Optional text preview (for consistency with RAG)
+            st.text_area("Excel Preview (Text)", df.to_string(index=False), height=200)
 
 # JSON
 if selected_tab == "JSON":
