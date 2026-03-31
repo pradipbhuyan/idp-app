@@ -688,12 +688,28 @@ if selected_tab == "Chat":
                     )
 
                     # Retrieve context
-                    docs = st.session_state.vectorstore.similarity_search(q, k=3)
-                    context = "\n\n".join([d.page_content for d in docs])
+                    docs = st.session_state.vectorstore.similarity_search(q, k=2)
+                    context = "\n\n".join([d.page_content[:800] for d in docs])
 
                     # Generate response
                     response = tracked_llm_call(
-                        f"Answer strictly from context.\nContext:\n{context}\nQ:{q}"
+                        f"""
+                    You are a strict document QA assistant.
+                    
+                    RULES:
+                    - Answer ONLY from the provided context
+                    - DO NOT add external knowledge
+                    - DO NOT assume anything
+                    - If answer is not found, say: "Not found in document"
+                    - Keep answer concise and factual
+                    - NO markdown, NO formatting
+                    
+                    CONTEXT:
+                    {context}
+                    
+                    QUESTION:
+                    {q}
+                    """
                     ).content
 
                     # Store response
@@ -702,7 +718,7 @@ if selected_tab == "Chat":
                     )
 
                     # Show response immediately
-                    st.write(response)
+                    st.text(response)
 
         # ------------------------------
         # 💬 Chat History
