@@ -1105,8 +1105,8 @@ if selected_tab == "Metrics":
         # ✅ Add Serial Number starting from 1
         doc_df.insert(0, "SL No", range(1, len(doc_df) + 1))
     
-        st.dataframe(doc_df, use_container_width=True)
-    
+        st.dataframe(doc_df, use_container_width=True, hide_index=True)
+        
         # Chart stays same
         st.bar_chart(doc_df.set_index("Document")[["Cost"]])
     
