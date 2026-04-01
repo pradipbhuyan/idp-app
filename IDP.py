@@ -631,19 +631,16 @@ def tracked_llm_call(prompt):
     )
 
     start = time.time()
-
-    try:
-        response = llm.invoke(prompt)
-    except Exception as e:
-        st.error(f"LLM call failed: {str(e)}")
-        return type("obj", (object,), {"content": ""})()
-
+    response = llm.invoke(prompt)
     duration = time.time() - start
 
-    usage = getattr(response, "response_metadata", {}).get("token_usage", {})
-
-    input_tokens = usage.get("prompt_tokens", 0)
-    output_tokens = usage.get("completion_tokens", 0)
+    try:
+        usage = getattr(response, "response_metadata", {}).get("token_usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
+    except:
+        input_tokens = len(str(prompt)) // 4
+        output_tokens = len(str(response.content)) // 4
 
     total_tokens = input_tokens + output_tokens
 
@@ -651,6 +648,7 @@ def tracked_llm_call(prompt):
     output_cost = output_tokens * 0.0006 / 1000
     total_cost = input_cost + output_cost
 
+    # GLOBAL
     m = st.session_state.metrics
     m["tokens"] += total_tokens
     m["input_tokens"] += input_tokens
@@ -658,6 +656,15 @@ def tracked_llm_call(prompt):
     m["cost"] += total_cost
     m["calls"] += 1
     m["response_times"].append(duration)
+
+    # DOCUMENT
+    doc = st.session_state.get("current_file") or "unknown"
+
+    if doc not in st.session_state.doc_costs:
+        st.session_state.doc_costs[doc] = {"cost": 0, "tokens": 0}
+
+    st.session_state.doc_costs[doc]["cost"] += total_cost
+    st.session_state.doc_costs[doc]["tokens"] += total_tokens
 
     return response
     
