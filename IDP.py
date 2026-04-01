@@ -574,46 +574,45 @@ if uploaded_file:
         # AUTO MODE (LangGraph)
         # ------------------------------
         if st.session_state.get("mode") == "Auto (LangGraph)":
-
+        
             graph = build_graph()
-
+        
             with st.spinner("🤖 Running Auto Processing..."):
-
+        
                 result = graph.invoke({
                     "text": st.session_state.full_text,
                     "template": st.session_state.get("resume_template"),
                     "progress": update_progress if "update_progress" in globals() else None
                 })
-
+        
             st.session_state.auto_result = result
-
+        
             st.success(f"Auto Processed → {result['doc_type'].upper()}")
-
-            st.stop()   # 🔥 STOP HERE (prevents manual flow)
-
+        
         # ------------------------------
         # CONTINUE MANUAL FLOW
         # ------------------------------
-
-        if not st.session_state.full_text.strip():
-            st.error("❌ No text extracted (possibly scanned or empty)")
-            st.stop()
-
-        progress.progress(40, text="Text extracted")
-
-        st.session_state.doc_type = detect_document_type(st.session_state.full_text)
-        progress.progress(60, text="Document type detected")
-
-        st.session_state.structured_data = extract_structured_json(
-            st.session_state.full_text,
-            st.session_state.doc_type
-        )
-        progress.progress(80, text="Structured data extracted")
-
-        st.session_state.vectorstore = create_vectorstore(docs)
-
-        progress.progress(100, text="Vector index created")
-
+        else:
+        
+            if not st.session_state.full_text.strip():
+                st.error("❌ No text extracted (possibly scanned or empty)")
+                st.stop()
+        
+            progress.progress(40, text="Text extracted")
+        
+            st.session_state.doc_type = detect_document_type(st.session_state.full_text)
+            progress.progress(60, text="Document type detected")
+        
+            st.session_state.structured_data = extract_structured_json(
+                st.session_state.full_text,
+                st.session_state.doc_type
+            )
+            progress.progress(80, text="Structured data extracted")
+        
+            st.session_state.vectorstore = create_vectorstore(docs)
+        
+            progress.progress(100, text="Vector index created")
+            
         # Suggested questions
         doc_type = st.session_state.doc_type
 
