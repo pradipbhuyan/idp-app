@@ -179,6 +179,16 @@ STRICT RULES:
     except Exception:
         return "Summary not available"
 
+
+# Resume helpers
+def replace_placeholders(doc, placeholders):
+    for para in doc.paragraphs:
+        for run in para.runs:
+            for key, value in placeholders.items():
+                if key in run.text:
+                    run.text = run.text.replace(key, str(value))
+
+
 def build_resume(data, template_file):
     summary = generate_resume_summary(data)
 
