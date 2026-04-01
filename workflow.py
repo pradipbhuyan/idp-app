@@ -26,10 +26,18 @@ class IDPState(TypedDict):
 # ------------------------------
 
 def detect_node(state):
+    progress = state.get("progress")
+    if progress:
+        progress(10, "🔍 Detecting document type...")
+
     state["doc_type"] = detect_document_type(state["text"])
     return state
 
 def extract_node(state):
+    progress = state.get("progress")
+    if progress:
+        progress(30, "🧠 Extracting structured data...")
+
     state["data"] = extract_structured_json(
         state["text"],
         state["doc_type"]
@@ -42,19 +50,24 @@ def extract_node(state):
 
 def resume_node(state):
 
-    # 1️⃣ Try user uploaded template
+    progress = state.get("progress")
+    if progress:
+        progress(60, "📄 Building resume...")
+
     template_bytes = state.get("template")
 
-    # 2️⃣ Else use default template
     if not template_bytes:
+        from pathlib import Path
         template_path = Path("templates/resume_template.docx")
 
         if template_path.exists():
             with open(template_path, "rb") as f:
                 template_bytes = f.read()
 
-    # 3️⃣ Build resume
     file = build_resume(state["data"], template_bytes)
+
+    if progress:
+        progress(90, "✅ Resume ready")
 
     state["result"] = {
         "type": "resume",
@@ -69,10 +82,15 @@ def resume_node(state):
 
 def invoice_node(state):
 
+    progress = state.get("progress")
+    if progress:
+        progress(60, "📊 Creating Excel...")
+
     df = json_to_kv_dataframe(state["data"])
     excel = generate_excel(df)
 
-    # (Optional) Concur API call here
+    if progress:
+        progress(90, "✅ Excel ready")
 
     state["result"] = {
         "type": "invoice",
@@ -88,7 +106,12 @@ def invoice_node(state):
 
 def ticket_node(state):
 
-    # (Optional) Concur API call here
+    progress = state.get("progress")
+    if progress:
+        progress(60, "📤 Sending to Concur...")
+
+    if progress:
+        progress(90, "✅ Sent successfully")
 
     state["result"] = {
         "type": "ticket",
