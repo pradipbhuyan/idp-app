@@ -586,6 +586,8 @@ if uploaded_file:
                 })
         
             st.session_state.auto_result = result
+
+            st.session_state.doc_type = result.get("doc_type")
         
             st.success(f"Auto Processed → {result['doc_type'].upper()}")
         
@@ -650,8 +652,11 @@ if uploaded_file:
         st.session_state.processed_file = uploaded_file.name
         st.session_state.file_hash = file_hash
 
-    st.success(f"✅ Processed Successfully | Type: {st.session_state.doc_type.upper()}")
+    doc_type = st.session_state.get("doc_type")
 
+    if doc_type:
+        st.success(f"✅ Processed Successfully | Type: {doc_type.upper()}")
+        
 # ------------------------------
 # TABS
 # ------------------------------
