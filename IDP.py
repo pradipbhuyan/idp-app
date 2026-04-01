@@ -583,6 +583,9 @@ STRICT RULES:
 def build_resume(data, template_file):
     summary = generate_resume_summary(data)
 
+    # ------------------------------
+    # LOAD TEMPLATE OR CREATE NEW
+    # ------------------------------
     if template_file:
 
         if isinstance(template_file, bytes):
@@ -592,9 +595,12 @@ def build_resume(data, template_file):
             path = save_temp_file(template_file)
             doc = DocxDocument(path)
 
-else:
-    doc = DocxDocument()
-    
+    else:
+        doc = DocxDocument()
+
+    # ------------------------------
+    # PLACEHOLDERS (ALWAYS RUN)
+    # ------------------------------
     placeholders = {
         "{{name}}": data.get("name", ""),
         "{{email}}": data.get("email", ""),
@@ -606,8 +612,9 @@ else:
 
     buffer = BytesIO()
     doc.save(buffer)
-    return buffer.getvalue()
 
+    return buffer.getvalue()
+    
 def create_vectorstore(docs):
 
     if not docs:
