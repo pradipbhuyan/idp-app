@@ -592,7 +592,7 @@ if uploaded_file:
                 result = graph.invoke({
                     "text": st.session_state.full_text,
                     "template": st.session_state.get("resume_template"),
-                    "progress": update_progress   # if you added progress
+                    "progress": update_progress if "update_progress" in globals() else None
                 })
 
             st.session_state.auto_result = result
