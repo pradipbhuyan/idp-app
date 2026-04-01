@@ -4,7 +4,7 @@ from pathlib import Path
 from io import BytesIO
 
 # Import your existing functions
-from IDP import (
+from core import (
     detect_document_type,
     extract_structured_json,
     build_resume,
