@@ -152,6 +152,33 @@ def extract_structured_json(text, doc_type):
                 "details": str(e)[:300]
             }
 
+def generate_resume_summary(data):
+
+    llm = ChatOpenAI(
+        model=st_state.get("model_choice", "gpt-4o-mini"),
+        temperature=0,
+        api_key=st_state["api_key"]
+    )
+
+    prompt = f"""
+Create a professional resume summary.
+
+Write candidate name at the top.
+Write education, certification and experience in concise bullet points.
+
+STRICT RULES:
+- No markdown
+- No * or **
+- Plain text only
+
+{json.dumps(data)}
+"""
+
+    try:
+        return llm.invoke(prompt).content
+    except Exception:
+        return "Summary not available"
+
 def build_resume(data, template_file):
     summary = generate_resume_summary(data)
 
