@@ -1101,9 +1101,18 @@ if selected_tab == "Metrics":
     doc_df = pd.DataFrame(doc_data)
 
     if not doc_df.empty:
-        st.dataframe(doc_df)
+    
+        # ✅ Add Serial Number starting from 1
+        doc_df.insert(0, "SL No", range(1, len(doc_df) + 1))
+    
+        st.dataframe(doc_df, use_container_width=True)
+    
+        # Chart stays same
         st.bar_chart(doc_df.set_index("Document")[["Cost"]])
-
+    
+    else:
+        st.info("No document-level cost recorded yet")
+        
     # ---- COST ALERT ----
     if m["cost"] > 0.05:
         st.warning("⚠️ High usage detected (>$0.05)")
