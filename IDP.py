@@ -826,7 +826,8 @@ if uploaded_file:
 # ------------------------------
 
 #tabs = ["Preview", "JSON", "Chat", "Download", "Concur"]
-tabs = ["Preview", "JSON", "Download", "Concur", "Chat", "Metrics"]
+#tabs = ["Preview", "JSON", "Download", "Concur", "Chat", "Metrics"]
+tabs = ["Preview", "JSON", "Download", "Concur", "Chat", "Auto", "Metrics"]
 
 selected_tab = st.radio(
     "",
@@ -1167,3 +1168,45 @@ if selected_tab == "Metrics":
     # ---- COST ALERT ----
     if m["cost"] > 0.05:
         st.warning("⚠️ High usage detected (>$0.05)")
+
+# ------------------------------
+# AUTO OUTPUT TAB
+# ------------------------------
+if selected_tab == "Auto":
+
+    if st.session_state.get("mode") != "Auto (LangGraph)":
+        st.info("Switch to Auto Mode from sidebar to use this feature")
+
+    elif not st.session_state.get("auto_result"):
+        st.warning("Upload and process a document in Auto Mode")
+
+    else:
+        st.subheader("🤖 Auto Processing Output")
+
+        res = st.session_state.auto_result["result"]
+
+        if res["type"] == "resume":
+
+            st.success("Resume generated successfully")
+
+            st.download_button(
+                "Download Resume",
+                res["file"],
+                "resume.docx"
+            )
+
+        elif res["type"] == "invoice":
+
+            st.success("Invoice processed")
+
+            st.dataframe(res["table"], use_container_width=True)
+
+            st.download_button(
+                "Download Excel",
+                res["excel"],
+                "invoice.xlsx"
+            )
+
+        elif res["type"] == "ticket":
+
+            st.success("Sent to Concur (simulated)")
