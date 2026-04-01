@@ -1,25 +1,54 @@
-def detect_document_type(text):
-    prompt = f"""
-Classify document into ONE:
-Resume, Invoice, Receipt, Report, Ticket, Other
-Return only the label.
-{text[:2000]}
-"""
-    raw = tracked_llm_call(prompt).content.strip().lower()
+from streamlit import session_state as st_state
+from langchain_openai import ChatOpenAI
 
-    if raw.startswith("resume"):
-        return "resume"
-    elif raw.startswith("invoice"):
-        return "invoice"
-    elif raw.startswith("receipt"):
-        return "receipt"
-    elif raw.startswith("report"):
-        return "report"
-    elif raw.startswith("ticket"):
-        return "ticket"
-    else:
+
+def detect_document_type(text):
+
+    # ------------------------------
+    # SAFETY CHECK
+    # ------------------------------
+    if "api_key" not in st_state:
         return "other"
 
+    llm = ChatOpenAI(
+        model=st_state.get("model_choice", "gpt-4o-mini"),
+        temperature=0,
+        api_key=st_state["api_key"]
+    )
+
+    prompt = f"""
+Classify document into ONE label:
+
+resume
+invoice
+receipt
+report
+ticket
+other
+
+STRICT RULES:
+- Return ONLY one word
+- No explanation
+- No sentence
+
+{text[:2000]}
+"""
+
+    try:
+        raw = llm.invoke(prompt).content.lower().strip()
+    except Exception:
+        return "other"
+
+    # ------------------------------
+    # ROBUST MATCHING
+    # ------------------------------
+    labels = ["resume", "invoice", "receipt", "report", "ticket"]
+
+    for label in labels:
+        if label in raw:
+            return label
+
+    return "other"
 
 def extract_structured_json(text, doc_type):
 
