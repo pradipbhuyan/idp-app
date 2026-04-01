@@ -419,16 +419,6 @@ def safe_json_parse(response):
     return {"error": "Invalid JSON output", "raw_response": response[:500]}
 
 
-# Resume helpers
-
-def replace_placeholders(doc, placeholders):
-    for para in doc.paragraphs:
-        for run in para.runs:
-            for key, value in placeholders.items():
-                if key in run.text:
-                    run.text = run.text.replace(key, str(value))
-
-
 def generate_resume_summary(data):
     prompt = f"""
 Create a professional resume summary.
