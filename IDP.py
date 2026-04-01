@@ -564,11 +564,17 @@ def build_resume(data, template_file):
     summary = generate_resume_summary(data)
 
     if template_file:
-        path = save_temp_file(template_file)
-        doc = DocxDocument(path)
-    else:
-        doc = DocxDocument()
 
+        if isinstance(template_file, bytes):
+            temp = BytesIO(template_file)
+            doc = DocxDocument(temp)
+        else:
+            path = save_temp_file(template_file)
+            doc = DocxDocument(path)
+
+else:
+    doc = DocxDocument()
+    
     placeholders = {
         "{{name}}": data.get("name", ""),
         "{{email}}": data.get("email", ""),
