@@ -34,18 +34,21 @@ from langchain_core.messages import HumanMessage
 from docx import Document as DocxDocument
 from streamlit_pdf_viewer import pdf_viewer
 
-# Use API key through input from user
-def get_llm():
+# ------------------------------
+# LLM & EMBEDDINGS
+# ------------------------------
+
+@st.cache_resource
+def get_llm(api_key, model):
     return ChatOpenAI(
-        model=st.session_state.get("model_choice", "gpt-4o-mini"),
+        model=model,
         temperature=0,
-        api_key=st.session_state["api_key"]
+        api_key=api_key
     )
 
-def get_embeddings():
-    return OpenAIEmbeddings(
-        api_key=st.session_state["api_key"]
-    )
+@st.cache_resource
+def get_embeddings(api_key):
+    return OpenAIEmbeddings(api_key=api_key)
 
 # ------------------------------
 # INIT
@@ -145,7 +148,13 @@ if "api_key" not in st.session_state:
 if not st.session_state["logged_in"]:
     login()
     st.stop()
-
+    
+# ------------------------------
+# API KEY SAFETY 
+# ------------------------------
+if not st.session_state.get("api_key"):
+    st.error("API key missing. Please login again.")
+    st.stop()
 
 # ------------------------------
 # SIDEBAR (USER INFO + LOGOUT)
@@ -300,12 +309,20 @@ def process_file(uploaded_file):
 
             
         try:
-            response = get_llm().invoke([message])
+            llm = get_llm(
+                st.session_state["api_key"],
+                st.session_state.get("model_choice", "gpt-4o-mini")
+            )
+        
+            response = llm.invoke([message])
             content = getattr(response, "content", "") or ""
+        
             if not content.strip():
                 content = "No readable text found in image"
-        except Exception:
-            content = ""
+        
+        except Exception as e:
+            st.error(f"OCR failed: {str(e)}")
+            content = """
     
         documents.append(Document(page_content=str(content)))
 
@@ -543,44 +560,74 @@ def build_resume(data, template_file):
     return buffer.getvalue()
 
 def create_vectorstore(docs):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
+
+    if not docs:
+        st.error("❌ No documents to index")
+        return None
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=150
+    )
+
     chunks = splitter.split_documents(docs)
 
-    # 🔥 Tag each chunk with document name
+    if not chunks:
+        st.error("❌ No chunks created")
+        return None
+
     for chunk in chunks:
         chunk.metadata = {
-            "source": st.session_state.current_file
+            "source": st.session_state.get("current_file", "unknown")
         }
 
-    return Chroma.from_documents(
-        chunks,
-        embedding=get_embeddings()
-    )
+    try:
+        emb = get_embeddings(st.session_state["api_key"])
+
+        vectorstore = Chroma.from_documents(
+            chunks,
+            embedding=emb
+        )
+
+        return vectorstore
+
+    except Exception as e:
+        import traceback
+        st.error("🚨 Vectorstore creation failed")
+        st.code(traceback.format_exc())
+        return None
 
 import time
 
 def tracked_llm_call(prompt):
+    import time
+
+    llm = get_llm(
+        st.session_state["api_key"],
+        st.session_state.get("model_choice", "gpt-4o-mini")
+    )
+
     start = time.time()
-    response = get_llm().invoke(prompt)
-    duration = time.time() - start
-    
-    # Try real token usage
+
     try:
-        usage = response.response_metadata.get("token_usage", {})
-        input_tokens = usage.get("prompt_tokens", 0)
-        output_tokens = usage.get("completion_tokens", 0)
-    except:
-        input_tokens = len(str(prompt)) // 4
-        output_tokens = len(str(response.content)) // 4
+        response = llm.invoke(prompt)
+    except Exception as e:
+        st.error(f"LLM call failed: {str(e)}")
+        return type("obj", (object,), {"content": ""})()
+
+    duration = time.time() - start
+
+    usage = getattr(response, "response_metadata", {}).get("token_usage", {})
+
+    input_tokens = usage.get("prompt_tokens", 0)
+    output_tokens = usage.get("completion_tokens", 0)
 
     total_tokens = input_tokens + output_tokens
 
-    # Pricing (gpt-4o-mini)
     input_cost = input_tokens * 0.00015 / 1000
     output_cost = output_tokens * 0.0006 / 1000
     total_cost = input_cost + output_cost
 
-    # ---- GLOBAL METRICS ----
     m = st.session_state.metrics
     m["tokens"] += total_tokens
     m["input_tokens"] += input_tokens
@@ -589,15 +636,8 @@ def tracked_llm_call(prompt):
     m["calls"] += 1
     m["response_times"].append(duration)
 
-    # ---- DOCUMENT METRICS ----
-    doc = st.session_state.get("current_file", "unknown")
-    if doc not in st.session_state.doc_costs:
-        st.session_state.doc_costs[doc] = {"cost": 0, "tokens": 0}
-        
-    st.session_state.doc_costs[doc]["cost"] += total_cost
-    st.session_state.doc_costs[doc]["tokens"] += total_tokens
-
     return response
+    
 # ------------------------------
 # PROCESSING WITH PROGRESS
 # ------------------------------
