@@ -1015,30 +1015,50 @@ if selected_tab == "Auto":
     else:
         st.subheader("🤖 Auto Processing Output")
 
-        res = st.session_state.auto_result["result"]
+        result = st.session_state.auto_result
+        res = result.get("result", {})
+        doc_type = result.get("doc_type", "")
 
-        if res["type"] == "resume":
+        st.write(f"📄 Detected Type: **{doc_type.upper()}**")
 
-            st.success("Resume generated successfully")
+        # ------------------------------
+        # RESUME DOWNLOAD
+        # ------------------------------
+        if res.get("type") == "resume":
+
+            st.success("✅ Resume generated successfully")
+
+            file = res.get("file")
+
+            if file:
+                st.download_button(
+                    label="⬇️ Download Resume",
+                    data=file,
+                    file_name="generated_resume.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
+            else:
+                st.error("Resume file missing")
+
+        # ------------------------------
+        # INVOICE OUTPUT
+        # ------------------------------
+        elif res.get("type") == "invoice":
+
+            st.success("✅ Invoice processed")
+
+            st.dataframe(res.get("table"), use_container_width=True)
 
             st.download_button(
-                "Download Resume",
-                res["file"],
-                "resume.docx"
-            )
-
-        elif res["type"] == "invoice":
-
-            st.success("Invoice processed")
-
-            st.dataframe(res["table"], use_container_width=True)
-
-            st.download_button(
-                "Download Excel",
-                res["excel"],
+                "⬇️ Download Excel",
+                res.get("excel"),
                 "invoice.xlsx"
             )
 
-        elif res["type"] == "ticket":
+        # ------------------------------
+        # TICKET OUTPUT
+        # ------------------------------
+        elif res.get("type") == "ticket":
 
+            st.success("✅ Sent to Concur (simulated)")
             st.success("Sent to Concur (simulated)")
