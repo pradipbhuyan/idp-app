@@ -528,6 +528,13 @@ def tracked_llm_call(prompt):
     st.session_state.doc_costs[doc]["tokens"] += total_tokens
 
     return response
+
+
+def update_progress(percent, message):
+    if "progress_bar" not in st.session_state:
+        st.session_state.progress_bar = st.progress(0)
+
+    st.session_state.progress_bar.progress(percent, text=message)
     
 # ------------------------------
 # PROCESSING WITH PROGRESS
