@@ -1,5 +1,5 @@
 # ==============================
-# INTELLIGENT DOCUMENT PROCESSOR - with Metrics and Logo
+# INTELLIGENT DOCUMENT PROCESSOR - with Agentic Mode
 # ==============================
 
 import os
