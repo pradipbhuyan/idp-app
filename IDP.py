@@ -270,91 +270,114 @@ def load_docx_safe(file_path):
 
 def process_file(uploaded_file):
     documents = []
+
     if not uploaded_file:
         return documents
 
+    # ✅ Reset pointer (important)
+    uploaded_file.seek(0)
+
     suffix = Path(uploaded_file.name).suffix.lower()
 
+    # ------------------------------
+    # 🖼️ IMAGE OCR
+    # ------------------------------
     if suffix in [".png", ".jpg", ".jpeg"]:
+
         encoded = base64.b64encode(uploaded_file.getvalue()).decode()
 
         message = HumanMessage(
-        content=[
-            {
-                "type": "text",
-                "text": """You are an OCR assistant.
-    
-            Extract ALL visible text from the image.
-            
-            Rules:
-            - Do NOT skip anything
-            - Preserve numbers, amounts, dates
-            - Preserve line structure
-            - If it's a receipt, extract:
-              - vendor name
-              - date
-              - items
-              - total
-            - Output plain text only
-            """
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{encoded}"
-                        }
-                    }
-                ]
-            )
+            content=[
+                {
+                    "type": "text",
+                    "text": """You are an OCR assistant.
 
-            
+Extract ALL visible text from the image.
+
+Rules:
+- Do NOT skip anything
+- Preserve numbers, amounts, dates
+- Preserve line structure
+- If it's a receipt, extract:
+  - vendor name
+  - date
+  - items
+  - total
+- Output plain text only
+"""
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{encoded}"
+                    }
+                }
+            ]
+        )
+
         try:
             llm = get_llm(
                 st.session_state["api_key"],
                 st.session_state.get("model_choice", "gpt-4o-mini")
             )
-        
+
             response = llm.invoke([message])
             content = getattr(response, "content", "") or ""
-        
+
             if not content.strip():
                 content = "No readable text found in image"
-        
+
         except Exception as e:
             st.error(f"OCR failed: {str(e)}")
-            content = """
-    
+            content = "OCR failed"
+
         documents.append(Document(page_content=str(content)))
 
+    # ------------------------------
+    # 📄 OTHER FILE TYPES
+    # ------------------------------
     else:
         file_path = save_temp_file(uploaded_file)
 
-        if suffix == ".txt":
-            try:
-                documents.extend(TextLoader(file_path, encoding="utf-8").load())
-            except Exception:
-                documents.extend(TextLoader(file_path, encoding="cp1252").load())
-        elif suffix == ".pdf":
-            documents.extend(PyPDFLoader(file_path).load())
-        elif suffix == ".docx":
-            documents.extend(load_docx_safe(file_path))
-        elif suffix == ".pptx":
-            from pptx import Presentation
-            prs = Presentation(file_path)
-            text = []
-            for slide in prs.slides:
-                for shape in slide.shapes:
-                    if hasattr(shape, "text") and shape.text.strip():
-                        text.append(shape.text)
-            documents.append(Document(page_content="\n".join(text)))
-        elif suffix == ".xlsx":
-            import pandas as pd
-            df = pd.read_excel(file_path)
-            # Convert dataframe to readable text
-            text = df.to_string(index=False)
-            documents.append(Document(page_content=text))
-            
+        try:
+            if suffix == ".txt":
+                try:
+                    documents.extend(TextLoader(file_path, encoding="utf-8").load())
+                except Exception:
+                    documents.extend(TextLoader(file_path, encoding="cp1252").load())
+
+            elif suffix == ".pdf":
+                docs = PyPDFLoader(file_path).load()
+                if docs:
+                    documents.extend(docs)
+                else:
+                    st.warning("PDF contains no extractable text")
+
+            elif suffix == ".docx":
+                documents.extend(load_docx_safe(file_path))
+
+            elif suffix == ".pptx":
+                from pptx import Presentation
+                prs = Presentation(file_path)
+
+                text = []
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text") and shape.text.strip():
+                            text.append(shape.text)
+
+                documents.append(Document(page_content="\n".join(text)))
+
+            elif suffix == ".xlsx":
+                df = pd.read_excel(file_path)
+                text = df.to_string(index=False)
+                documents.append(Document(page_content=text))
+
+        except Exception as e:
+            st.error(f"File processing failed: {str(e)}")
+
     return documents
+
 
 def safe_json_parse(response):
     try:
@@ -667,6 +690,9 @@ if uploaded_file:
         progress = st.progress(0, text="Processing Started...")
         
         docs = process_file(uploaded_file)
+        if not docs:
+            st.error("❌ Failed to process document")
+            st.stop()
             
         progress.progress(20, text="File processed")
 
@@ -677,6 +703,10 @@ if uploaded_file:
                 if d is not None and getattr(d, "page_content", None)
             ]
         )
+
+        if not st.session_state.full_text.strip():
+            st.error("❌ No text extracted (possibly scanned or empty)")
+            st.stop()
         
         progress.progress(40, text="Text extracted")
 
@@ -798,7 +828,7 @@ if selected_tab == "JSON":
 if selected_tab == "Chat":
 
     # ❗ If no document processed
-    if not st.session_state.vectorstore:
+    if st.session_state.vectorstore is None:
         st.warning("Please upload and process a document first")
 
     else:
