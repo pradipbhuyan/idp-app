@@ -198,6 +198,7 @@ def replace_placeholders(doc, placeholders):
 
 
 def build_resume(data, template_file):
+    
     summary = generate_resume_summary(data)
 
     # ------------------------------
@@ -209,19 +210,23 @@ def build_resume(data, template_file):
             # Case 1: bytes (Auto mode)
             if isinstance(template_file, bytes):
                 doc = DocxDocument(BytesIO(template_file))
-    
+
             # Case 2: Streamlit UploadedFile
             elif hasattr(template_file, "read"):
-                doc = DocxDocument(BytesIO(template_file.read()))
-    
+                content = template_file.read()
+                template_file.seek(0)  # ✅ FIX (reset pointer)
+                doc = DocxDocument(BytesIO(content))
+
             else:
                 doc = DocxDocument()
-    
-        except Exception:
+
+        except Exception as e:
+            print("Template load error:", e)  # optional debug
             doc = DocxDocument()
-    
+
     else:
         doc = DocxDocument()
+
     # ------------------------------
     # PLACEHOLDERS (ALWAYS RUN)
     # ------------------------------
