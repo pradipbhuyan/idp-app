@@ -8,6 +8,47 @@ from streamlit import session_state as st_state
 import tempfile
 from pathlib import Path
 
+
+def safe_json_parse(text):
+    """
+    Safely parse LLM JSON output.
+    Handles:
+    - trailing commas
+    - partial JSON
+    - text before/after JSON
+    """
+
+    if not text:
+        return {}
+
+    # Remove markdown wrappers if any
+    text = text.strip().replace("```json", "").replace("```", "").strip()
+
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except:
+        pass
+
+    # Try to extract JSON block
+    try:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+    except:
+        pass
+
+    # Fix common trailing comma issue
+    try:
+        text_fixed = re.sub(r",\s*}", "}", text)
+        text_fixed = re.sub(r",\s*]", "]", text_fixed)
+        return json.loads(text_fixed)
+    except:
+        pass
+
+    # Final fallback
+    return {"raw_output": text}
+
 def extract_structured_json(text, doc_type):
     """
     Extract structured JSON from document text.
