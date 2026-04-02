@@ -205,16 +205,23 @@ def build_resume(data, template_file):
     # ------------------------------
     if template_file:
 
-        if isinstance(template_file, bytes):
-            temp = BytesIO(template_file)
-            doc = DocxDocument(temp)
-        else:
-            path = save_temp_file(template_file)
-            doc = DocxDocument(path)
-
+        try:
+            # Case 1: bytes (Auto mode)
+            if isinstance(template_file, bytes):
+                doc = DocxDocument(BytesIO(template_file))
+    
+            # Case 2: Streamlit UploadedFile
+            elif hasattr(template_file, "read"):
+                doc = DocxDocument(BytesIO(template_file.read()))
+    
+            else:
+                doc = DocxDocument()
+    
+        except Exception:
+            doc = DocxDocument()
+    
     else:
         doc = DocxDocument()
-
     # ------------------------------
     # PLACEHOLDERS (ALWAYS RUN)
     # ------------------------------
