@@ -6,6 +6,14 @@ from docx import Document as DocxDocument
 from streamlit import session_state as st_state
 from langchain_openai import ChatOpenAI
 
+import tempfile
+from pathlib import Path
+
+def save_temp_file(uploaded_file):
+    suffix = Path(uploaded_file.name).suffix
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(uploaded_file.getvalue())
+        return tmp.name
 
 def detect_document_type(text):
 
