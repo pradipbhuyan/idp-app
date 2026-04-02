@@ -77,22 +77,24 @@ def extract_structured_json(text, doc_type):
 
         Return ONLY valid JSON.
 
-        MANDATORY SCHEMA:
+        STRICT SCHEMA:
         {{
-        "name": "",
-        "email": "",
-        "phone": "",
-        "skills": [],
-        "education": [],
-        "experience": []
+          "name": "",
+          "email": "",
+          "phone": "",
+          "skills": [],
+          "education": [],
+          "experience": []
         }}
 
         RULES:
-        - ALWAYS include "name"
-        - Do not add extra keys
-
-        Content:
-        {clean_text[:4000]}
+        - Always extract name if present
+        - Extract ALL skills
+        - Extract ALL experience entries
+        - Extract education properly
+        - If missing → return empty string or []
+        
+        {text[:4000]}
         """
 
         else:
@@ -190,11 +192,11 @@ STRICT RULES:
 
 # Resume helpers
 def replace_placeholders(doc, placeholders):
+
     for para in doc.paragraphs:
-        for run in para.runs:
-            for key, value in placeholders.items():
-                if key in run.text:
-                    run.text = run.text.replace(key, str(value))
+        for key, value in placeholders.items():
+            if key in para.text:
+                para.text = para.text.replace(key, str(value))
 
 
 def build_resume(data, template_file):
